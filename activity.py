@@ -164,20 +164,24 @@ def _chat_item(cmd: str) -> dict | None:
     if m:
         sid = m.group(0)
     if "codex" in low:
-        summary = codex_summary(sid or None)
-        key = ("codex", sid or "bare")
+        cid, summary = codex_channel(sid or None)
         title = "codex resume" if sid else "codex"
+        key = ("codex", cid or sid or "bare")
     elif "opencode" in low:
-        summary = opencode_summary()
-        key = ("opencode", "latest")
+        cid, summary = opencode_channel()
         title = "opencode"
+        key = ("opencode", cid or "latest")
     elif "grok" in low:
-        summary = grok_summary()
-        key = ("grok", "latest")
+        cid, summary = grok_channel()
         title = "grok"
+        key = ("grok", cid or "latest")
     else:
         return None
-    detail = "内容：" + _redact(summary) if summary else "（无会话记录）"
+    if summary and _is_sensitive(summary):
+        return None
+    if not summary:
+        return {"time": "", "title": title, "detail": "（无会话记录）", "_key": key}
+    detail = f"频道 {cid} · 内容：{_redact(summary)}" if cid else f"内容：{_redact(summary)}"
     return {"time": "", "title": title, "detail": detail, "_key": key}
 
 
@@ -197,15 +201,37 @@ def _dedup(events: list[dict]) -> list[dict]:
     return final
 
 
-def codex_summary(session_id: str | None = None) -> str | None:
+def _sensitive_names() -> list[str]:
+    raw = db.get_settings().get("sensitive_names", "")
+    names = [n.strip() for n in raw.split(",") if n.strip()] if raw else ["小念"]
+    return names
+
+
+def _is_sensitive(text: str) -> bool:
+    if not text:
+        return False
+    for name in _sensitive_names():
+        if name and name in text:
+            return True
+    for pat, _ in _PII_PATTERNS:
+        if pat.search(text):
+            return True
+    if re.search(r"(密码|password|身份证|银行卡|银行账户|验证码|私密|隐私)", text, re.I):
+        return True
+    return False
+
+
+def codex_channel(session_id: str | None = None) -> tuple[str | None, str | None]:
     if session_id:
         pats = glob.glob(str(CODEX_SESSIONS / "**" / f"*{session_id}*"), recursive=True)
     else:
         pats = glob.glob(str(CODEX_SESSIONS / "**" / "rollout-*.jsonl"), recursive=True)
     if not pats:
-        return None
+        return None, None
     pats.sort(key=os.path.getmtime, reverse=True)
     fp = pats[0]
+    m = UUID_RE.search(Path(fp).name)
+    cid = m.group(0) if m else None
     first_user = None
     try:
         with open(fp, encoding="utf-8", errors="replace") as fh:
@@ -230,36 +256,38 @@ def codex_summary(session_id: str | None = None) -> str | None:
                     first_user = text
                     break
     except OSError:
-        return None
+        return cid, None
     if not first_user:
-        return None
-    return " ".join(first_user.split())[:80]
+        return cid, None
+    return cid, " ".join(first_user.split())[:80]
 
 
-def opencode_summary() -> str | None:
+def opencode_channel() -> tuple[str | None, str | None]:
     if not OPENCODE_DB.exists():
-        return None
+        return None, None
     try:
         import sqlite3
 
         con = sqlite3.connect(str(OPENCODE_DB))
         con.row_factory = sqlite3.Row
         row = con.execute(
-            "SELECT title FROM session WHERE title IS NOT NULL AND title<>'' ORDER BY time_updated DESC LIMIT 1"
+            "SELECT id, title FROM session WHERE title IS NOT NULL AND title<>'' ORDER BY time_updated DESC LIMIT 1"
         ).fetchone()
         con.close()
     except Exception:
-        return None
-    return row["title"] if row else None
+        return None, None
+    if not row:
+        return None, None
+    return row["id"], row["title"]
 
 
-def grok_summary() -> str | None:
+def grok_channel() -> tuple[str | None, str | None]:
     try:
         act = json.loads(GROK_ACTIVE.read_text(encoding="utf-8"))
     except (OSError, ValueError):
-        return None
+        return None, None
     if not isinstance(act, list):
-        return None
+        return None, None
     for a in act:
         sid = a.get("session_id")
         if not sid:
@@ -271,8 +299,8 @@ def grok_summary() -> str | None:
                 continue
             title = sm.get("session_summary") or sm.get("title") or sm.get("summary") or ""
             if title:
-                return str(title).replace("<|eos|>", "").strip()[:80]
-    return None
+                return sid, str(title).replace("<|eos|>", "").strip()[:80]
+    return None, None
 
 
 def collect() -> dict:

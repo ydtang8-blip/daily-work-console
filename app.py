@@ -75,6 +75,7 @@ class SettingsIn(BaseModel):
     deepseek_key: str | None = None
     skills_path: str | None = None
     activity_dirs: str | None = None
+    sensitive_names: str | None = None
     port: str | None = None
 
 

@@ -646,6 +646,7 @@ async function loadSettings() {
   document.getElementById('set-title').value = s.pushplus_title || '工作台提醒';
   document.getElementById('set-skills-path').value = s.skills_path || '';
   document.getElementById('set-activity-dirs').value = s.activity_dirs || '';
+  document.getElementById('set-sensitive-names').value = s.sensitive_names || '';
   document.getElementById('set-port').value = s.port || '8789';
   document.getElementById('set-token').placeholder = s.has_pushplus_token ? '已配置（留空不变）' : '未配置';
   document.getElementById('set-pushdeer').placeholder = s.has_pushdeer_key ? '已配置（留空不变）' : '未配置';
@@ -667,6 +668,7 @@ async function saveSettings() {
   body.pushplus_title = document.getElementById('set-title').value.trim() || '工作台提醒';
   body.skills_path = document.getElementById('set-skills-path').value.trim();
   body.activity_dirs = document.getElementById('set-activity-dirs').value.trim();
+  body.sensitive_names = document.getElementById('set-sensitive-names').value.trim();
   body.port = document.getElementById('set-port').value.trim() || '8789';
   await api('/api/settings', { method: 'POST', body: JSON.stringify(body) });
   document.getElementById('set-token').value = '';
