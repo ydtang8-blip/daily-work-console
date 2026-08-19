@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>每日工作台</title>
+<link rel="stylesheet" href="/static/app.css?v=2">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <span class="logo">▣</span>
+    <div>
+      <h1>每日工作台</h1>
+      <p class="sub">复盘 · 待办 · 改进 · 项目 · 技能库</p>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <span id="today-label" class="today"></span>
+    <span id="health-dot" class="dot"></span>
+  </div>
+</header>
+
+<nav class="tabs">
+  <button class="tab active" data-tab="home">首页</button>
+  <button class="tab" data-tab="todos">待办<span class="badge" id="badge-todos"></span></button>
+  <button class="tab" data-tab="logs">复盘</button>
+  <button class="tab" data-tab="improvements">改进点<span class="badge" id="badge-imp"></span></button>
+  <button class="tab" data-tab="projects">项目</button>
+  <button class="tab" data-tab="skills">技能库</button>
+  <button class="tab" data-tab="settings">设置</button>
+</nav>
+
+<main>
+  <section id="view-home" class="view active">
+    <div class="cards" id="home-cards"></div>
+    <div class="grid2">
+      <div class="panel">
+        <div class="panel-head"><h3>今日待办</h3><button class="btn small" onclick="go('todos')">全部 →</button></div>
+        <div id="home-todos" class="todo-list"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h3>今日复盘</h3><button class="btn small" onclick="go('logs')">写复盘 →</button></div>
+        <div id="home-log" class="log-preview"></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h3>最近复盘记录</h3></div>
+      <div id="home-recent" class="recent-list"></div>
+    </div>
+  </section>
+
+  <section id="view-todos" class="view">
+    <div class="panel">
+      <div class="panel-head">
+        <h3>待办清单</h3>
+        <div class="toolbar">
+          <select id="todo-filter-status">
+            <option value="">全部状态</option>
+            <option value="pending">待办</option>
+            <option value="in_progress">进行中</option>
+            <option value="done">已完成</option>
+          </select>
+          <select id="todo-filter-overdue">
+            <option value="">全部日期</option>
+            <option value="1">只看到期/逾期</option>
+          </select>
+          <button class="btn small" onclick="rolloverTodos()">↻ 结转昨日未完成</button>
+          <button class="btn primary" onclick="openTodoForm()">＋ 新增待办</button>
+        </div>
+      </div>
+      <div id="todo-list" class="todo-list"></div>
+    </div>
+  </section>
+
+  <section id="view-logs" class="view">
+    <div class="panel">
+      <div class="panel-head">
+        <h3>每日复盘</h3>
+        <input type="date" id="log-date" class="date-input">
+      </div>
+      <div class="log-form">
+        <label>复盘总结 <textarea id="log-review" rows="3" placeholder="今天整体怎么样、核心结论"></textarea></label>
+        <label>完成事项（每行一项）<textarea id="log-done" rows="6"></textarea></label>
+        <label>改进点/反思（每行一项）<textarea id="log-imp" rows="4"></textarea></label>
+        <label>未完成/遗留（每行一项）<textarea id="log-unfinished" rows="4"></textarea></label>
+        <label>备注 <textarea id="log-notes" rows="2"></textarea></label>
+        <div class="log-actions">
+          <button class="btn" onclick="copyLogToImprovements()">改进点转存</button>
+          <button class="btn" onclick="copyLogToTodos()">遗留转待办</button>
+          <button class="btn primary" onclick="saveLog()">保存</button>
+        </div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h3>历史记录</h3></div>
+      <div id="log-list" class="recent-list"></div>
+    </div>
+  </section>
+
+  <section id="view-improvements" class="view">
+    <div class="panel">
+      <div class="panel-head">
+        <h3>改进点</h3>
+        <div class="toolbar">
+          <select id="imp-filter">
+            <option value="">全部</option>
+            <option value="open">未落实</option>
+            <option value="done">已落实</option>
+          </select>
+          <button class="btn primary" onclick="openImpForm()">＋ 新增</button>
+        </div>
+      </div>
+      <div id="imp-list"></div>
+    </div>
+  </section>
+
+  <section id="view-projects" class="view">
+    <div class="panel">
+      <div class="panel-head">
+        <h3>项目进度</h3>
+        <button class="btn primary" onclick="openProjectForm()">＋ 新增项目</button>
+      </div>
+      <div id="project-list" class="project-list"></div>
+    </div>
+  </section>
+
+  <section id="view-skills" class="view">
+    <div class="panel">
+      <div class="panel-head">
+        <h3>技能库 <span id="skills-counts" class="muted"></span></h3>
+        <div class="toolbar">
+          <input type="search" id="skills-q" class="search-input" placeholder="搜索技能名 / 描述…">
+        </div>
+      </div>
+      <div id="skills-filter" class="chip-row"></div>
+      <div id="skills-list" class="skills-list"></div>
+    </div>
+  </section>
+
+  <section id="view-settings" class="view">
+    <div class="panel">
+      <div class="panel-head"><h3>设置</h3></div>
+      <div class="log-form">
+        <label>提醒通道（要手机弹窗选 PushDeer / Bark）<select id="set-channel">
+          <option value="pushdeer">PushDeer（iPhone/安卓系统弹窗，推荐）</option>
+          <option value="bark">Bark（仅 iPhone，最强提醒，可静音模式响铃）</option>
+          <option value="pushplus">PushPlus（微信服务号，不弹窗）</option>
+        </select></label>
+        <label>PushDeer PushKey <input type="password" id="set-pushdeer" placeholder="PDU… 留空保持不变"></label>
+        <label>Bark 设备 Key <input type="password" id="set-bark" placeholder="Bark App 里的 key，留空不变"></label>
+        <label>PushPlus Token（微信，含密不入库）<input type="password" id="set-token" placeholder="留空保持不变"></label>
+        <label>推送标题 <input type="text" id="set-title" placeholder="工作台提醒"></label>
+        <label>技能库路径 <input type="text" id="set-skills-path"></label>
+        <label>端口 <input type="text" id="set-port"></label>
+        <div class="log-actions">
+          <button class="btn" onclick="testReminder()">发测试推送</button>
+          <button class="btn primary" onclick="saveSettings()">保存设置</button>
+        </div>
+      </div>
+      <div class="panel-head"><h3>定时提醒任务（已装 3 个）</h3></div>
+      <div class="muted hint">
+        <p>• <b>WorkConsoleMorning</b> 每天 08:00 推送「今日待办 + 逾期」到手机</p>
+        <p>• <b>WorkConsoleReminder</b> 每 30 分钟检查一次到期待办，8:00–23:00 内即时推送</p>
+        <p>• <b>WorkConsoleEvening</b> 每天 21:00 提醒写复盘（已写则自动跳过）</p>
+        <p>未完成待办每天自动结转顺延到今日（备注标「昨日结转」），服务重启时也会执行一次。</p>
+        <pre>powershell -ExecutionPolicy Bypass -File "C:\Users\43886\Documents\Default Project\daily-work-console\install-reminder.ps1"</pre>
+        <p>手动检查：<code>python reminder.py --check</code> ｜ 手动推送今日待办：<code>python reminder.py --morning</code> ｜ 卸载：<code>install-reminder.ps1 -Uninstall</code></p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div id="modal" class="modal hidden">
+  <div class="modal-box">
+    <div class="modal-head"><h3 id="modal-title"></h3><button class="btn close" onclick="closeModal()">×</button></div>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<script src="/static/app.js?v=2"></script>
+</body>
+</html>
