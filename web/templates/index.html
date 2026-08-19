@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>每日工作台</title>
-<link rel="stylesheet" href="/static/app.css?v=4">
+<link rel="stylesheet" href="/static/app.css?v=5">
 </head>
 <body>
 <header class="topbar">
@@ -34,6 +34,15 @@
 <main>
   <section id="view-home" class="view active">
     <div class="cards" id="home-cards"></div>
+    <div class="panel">
+      <div class="panel-head">
+        <h3>今日电脑活动</h3>
+        <div class="toolbar">
+          <button class="btn small" onclick="collectActivity()">采集今日活动</button>
+        </div>
+      </div>
+      <div id="activity-panel" class="muted hint">还没采集。点「采集今日活动」读取今天改过的文件 / Git 提交 / 聊天频道，AI 复盘会用这些真实数据。</div>
+    </div>
     <div class="grid2">
       <div class="panel">
         <div class="panel-head"><h3>今日待办</h3><button class="btn small" onclick="go('todos')">全部 →</button></div>
@@ -92,15 +101,6 @@
           <button class="btn" onclick="saveLog()">保存</button>
         </div>
       </div>
-    </div>
-    <div class="panel">
-      <div class="panel-head">
-        <h3>今日电脑活动</h3>
-        <div class="toolbar">
-          <button class="btn small" onclick="collectActivity()">采集今日活动</button>
-        </div>
-      </div>
-      <div id="activity-panel" class="muted hint">还没采集。点「采集今日活动」读取今天改过的文件 / Git 提交 / 终端命令，AI 复盘会用这些真实数据。</div>
     </div>
     <div class="panel">
       <div class="panel-head"><h3>历史记录</h3></div>
@@ -192,6 +192,6 @@
 
 <div id="toast" class="toast hidden"></div>
 
-<script src="/static/app.js?v=4"></script>
+<script src="/static/app.js?v=5"></script>
 </body>
 </html>

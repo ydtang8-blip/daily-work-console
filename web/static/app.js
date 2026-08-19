@@ -108,6 +108,8 @@ const cards = [
     ? d.today_todos.map(renderTodoRow).join('')
     : '<div class="empty">今天暂无待办 🎉</div>';
 
+  loadActivity(d.today);
+
   const log = d.today_log;
   document.getElementById('home-log').innerHTML =
     (log.review ? `<p class="pre">${esc(log.review)}</p>` : '<div class="empty">今天还没写复盘</div>');
@@ -304,7 +306,6 @@ async function loadLogs() {
   document.getElementById('log-imp').value = log.improvements || '';
   document.getElementById('log-unfinished').value = log.unfinished || '';
   document.getElementById('log-notes').value = log.notes || '';
-  loadActivity(date);
   const list = (await api('/api/logs')).logs;
   document.getElementById('log-list').innerHTML = list.length
     ? list
