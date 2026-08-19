@@ -256,6 +256,45 @@ function setLogDate() {
   if (!el.value) el.value = new Date().toISOString().slice(0, 10);
 }
 
+function renderActivity(events) {
+  const el = document.getElementById('activity-panel');
+  if (!events || !Object.keys(events).length) {
+    el.className = 'muted hint';
+    el.innerHTML = '今日还没采集过。点「采集今日活动」。';
+    return;
+  }
+  const sec = (title, list) => list && list.length
+    ? `<div class="activity-sec"><b>${title}（${list.length}）</b>${list.slice(0, 12).map((e) => `<div class="activity-item"><span class="t">${esc(e.time || '--')}</span> ${esc(e.title)}</div>`).join('')}${list.length > 12 ? `<div class="muted">…共 ${list.length} 条</div>` : ''}</div>`
+    : '';
+  el.className = 'activity';
+  el.innerHTML = sec('Git 提交', events.git) + sec('文件改动', events.files) + sec('终端命令', events.terminal);
+}
+
+async function collectActivity() {
+  const btn = event.currentTarget;
+  btn.disabled = true;
+  btn.textContent = '采集中…';
+  try {
+    const r = await api('/api/activity/collect', { method: 'POST' });
+    renderActivity(r.events);
+    toast(`已采集 ${r.count} 条活动，AI 复盘会引用`);
+  } catch (e) {
+    toast(e.message, 'err');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '采集今日活动';
+  }
+}
+
+async function loadActivity(date) {
+  try {
+    const d = await api(`/api/activity/${date}`);
+    renderActivity(d.events);
+  } catch (e) {
+    /* 忽略 */
+  }
+}
+
 async function loadLogs() {
   setLogDate();
   const date = document.getElementById('log-date').value;
@@ -265,6 +304,7 @@ async function loadLogs() {
   document.getElementById('log-imp').value = log.improvements || '';
   document.getElementById('log-unfinished').value = log.unfinished || '';
   document.getElementById('log-notes').value = log.notes || '';
+  loadActivity(date);
   const list = (await api('/api/logs')).logs;
   document.getElementById('log-list').innerHTML = list.length
     ? list
@@ -604,6 +644,7 @@ async function loadSettings() {
   document.getElementById('set-channel').value = s.channel || 'pushdeer';
   document.getElementById('set-title').value = s.pushplus_title || '工作台提醒';
   document.getElementById('set-skills-path').value = s.skills_path || '';
+  document.getElementById('set-activity-dirs').value = s.activity_dirs || '';
   document.getElementById('set-port').value = s.port || '8789';
   document.getElementById('set-token').placeholder = s.has_pushplus_token ? '已配置（留空不变）' : '未配置';
   document.getElementById('set-pushdeer').placeholder = s.has_pushdeer_key ? '已配置（留空不变）' : '未配置';
@@ -624,6 +665,7 @@ async function saveSettings() {
   body.channel = document.getElementById('set-channel').value;
   body.pushplus_title = document.getElementById('set-title').value.trim() || '工作台提醒';
   body.skills_path = document.getElementById('set-skills-path').value.trim();
+  body.activity_dirs = document.getElementById('set-activity-dirs').value.trim();
   body.port = document.getElementById('set-port').value.trim() || '8789';
   await api('/api/settings', { method: 'POST', body: JSON.stringify(body) });
   document.getElementById('set-token').value = '';

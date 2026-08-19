@@ -72,6 +72,11 @@ def init_db() -> None:
             key TEXT PRIMARY KEY,
             value TEXT
         );
+        CREATE TABLE IF NOT EXISTS activity (
+            date TEXT PRIMARY KEY,
+            events TEXT NOT NULL,
+            updated_at TEXT DEFAULT ''
+        );
         """
     )
     con.commit()
@@ -96,6 +101,51 @@ def save_settings(payload: dict) -> dict:
     con.commit()
     con.close()
     return get_settings()
+
+
+def save_activity(date: str, events: dict) -> dict:
+    con = _conn()
+    import json
+
+    con.execute(
+        "INSERT INTO activity(date, events, updated_at) VALUES(?,?,?) "
+        "ON CONFLICT(date) DO UPDATE SET events=excluded.events, updated_at=excluded.updated_at",
+        (date, json.dumps(events, ensure_ascii=False), now_iso()),
+    )
+    con.commit()
+    con.close()
+    return get_activity(date)
+
+
+def get_activity(date: str) -> dict:
+    con = _conn()
+    row = con.execute("SELECT events, updated_at FROM activity WHERE date=?", (date,)).fetchone()
+    con.close()
+    if not row:
+        return {}
+    import json
+
+    try:
+        events = json.loads(row["events"])
+    except (TypeError, ValueError):
+        events = {}
+    return {"date": date, "updated_at": row["updated_at"], "events": events}
+
+
+def list_activity() -> list[dict]:
+    con = _conn()
+    rows = con.execute("SELECT date, events, updated_at FROM activity ORDER BY date DESC LIMIT 10").fetchall()
+    con.close()
+    import json
+
+    out = []
+    for r in rows:
+        try:
+            events = json.loads(r["events"])
+        except (TypeError, ValueError):
+            events = {}
+        out.append({"date": r["date"], "updated_at": r["updated_at"], "count": sum(len(v) for v in events.values())})
+    return out
 
 
 def public_settings() -> dict:

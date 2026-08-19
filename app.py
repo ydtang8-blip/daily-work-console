@@ -12,6 +12,7 @@ import db
 import deepseek
 import reminder
 import skills_index
+import activity
 
 BASE_DIR = Path(__file__).resolve().parent
 WEB_DIR = BASE_DIR / "web"
@@ -73,6 +74,7 @@ class SettingsIn(BaseModel):
     bark_key: str | None = None
     deepseek_key: str | None = None
     skills_path: str | None = None
+    activity_dirs: str | None = None
     port: str | None = None
 
 
@@ -294,6 +296,24 @@ def api_review_ai() -> dict:
     except RuntimeError as e:
         raise HTTPException(502, str(e)) from e
     return result
+
+
+@app.post("/api/activity/collect")
+def api_activity_collect() -> dict:
+    try:
+        return activity.collect_and_store()
+    except Exception as e:
+        raise HTTPException(500, f"采集失败：{e}") from e
+
+
+@app.get("/api/activity")
+def api_activity_list() -> dict:
+    return {"days": db.list_activity()}
+
+
+@app.get("/api/activity/{day}")
+def api_activity_get(day: str) -> dict:
+    return db.get_activity(day)
 
 
 def main() -> None:

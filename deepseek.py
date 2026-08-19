@@ -63,6 +63,8 @@ def generate_review(done: list[str], unfinished: list[str], improvements: list[s
 
 def build_today_context() -> str:
     from db import get_log, list_projects, list_todos, today_iso
+    import activity
+    import db
 
     today = today_iso()
     todos = list_todos()
@@ -78,6 +80,11 @@ def build_today_context() -> str:
         lines.append("今天已完成：" + "；".join(t["title"] for t in done_today[:10]))
     if active:
         lines.append("进行中项目：" + "；".join(p["name"] for p in active))
+    stored = db.get_activity(today)
+    if stored and stored.get("events"):
+        act_summary = activity.summarize(stored["events"])
+        if act_summary:
+            lines.append("【电脑活动采集】" + act_summary)
     log = get_log(today)
     if log and (log.get("review") or log.get("notes")):
         lines.append(f"今日已有草稿备注：{log.get('review') or log.get('notes')}")

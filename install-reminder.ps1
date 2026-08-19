@@ -7,7 +7,7 @@ $Proj = "C:\Users\43886\Documents\Default Project\daily-work-console"
 $Py = (Get-Command python).Source
 
 if ($Uninstall) {
-    foreach ($t in "WorkConsoleReminder", "WorkConsoleMorning", "WorkConsoleEvening") {
+    foreach ($t in "WorkConsoleReminder", "WorkConsoleMorning", "WorkConsoleEvening", "WorkConsoleActivity") {
         Unregister-ScheduledTask -TaskName $t -Confirm:$false -ErrorAction SilentlyContinue
         Write-Output "已卸载 $t"
     }
@@ -30,5 +30,10 @@ $Evening = New-ScheduledTaskAction -Execute $Py -Argument "`"$Proj\reminder.py`"
 $TrigEvening = New-ScheduledTaskTrigger -Daily -At 21:00
 Register-ScheduledTask -TaskName "WorkConsoleEvening" -Action $Evening -Trigger $TrigEvening -Settings $Settings -Force | Out-Null
 Write-Output "已安装 WorkConsoleEvening（每天 21:00 提醒写复盘，已写则跳过）"
+
+$Activity = New-ScheduledTaskAction -Execute $Py -Argument "`"$Proj\activity.py`" --collect" -WorkingDirectory $Proj
+$TrigActivity = New-ScheduledTaskTrigger -Daily -At 20:30
+Register-ScheduledTask -TaskName "WorkConsoleActivity" -Action $Activity -Trigger $TrigActivity -Settings $Settings -Force | Out-Null
+Write-Output "已安装 WorkConsoleActivity（每天 20:30 采集今日电脑活动，供 AI 复盘引用）"
 
 & $Py "`"$Proj\reminder.py`"" --check
