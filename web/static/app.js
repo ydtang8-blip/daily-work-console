@@ -264,7 +264,7 @@ function renderActivity(events) {
     return;
   }
   const sec = (title, list) => list && list.length
-    ? `<div class="activity-sec"><b>${title}（${list.length}）</b>${list.slice(0, 12).map((e) => `<div class="activity-item"><span class="t">${esc(e.time || '--')}</span> ${esc(e.title)}</div>`).join('')}${list.length > 12 ? `<div class="muted">…共 ${list.length} 条</div>` : ''}</div>`
+    ? `<div class="activity-sec"><b>${title}（${list.length}）</b>${list.slice(0, 12).map((e) => `<div class="activity-item"><span class="t">${esc(e.time || '--')}</span> <span>${esc(e.title)}</span></div>${e.detail ? `<div class="activity-detail">${esc(e.detail)}</div>` : ''}`).join('')}${list.length > 12 ? `<div class="muted">…共 ${list.length} 条</div>` : ''}</div>`
     : '';
   el.className = 'activity';
   el.innerHTML = sec('Git 提交', events.git) + sec('文件改动', events.files) + sec('终端命令', events.terminal);
