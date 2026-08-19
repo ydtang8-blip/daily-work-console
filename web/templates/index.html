@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>每日工作台</title>
-<link rel="stylesheet" href="/static/app.css?v=8">
+<link rel="stylesheet" href="/static/app.css?v=9">
 </head>
 <body>
 <header class="topbar">
@@ -164,7 +164,7 @@
         <label>推送标题 <input type="text" id="set-title" placeholder="工作台提醒"></label>
         <label>技能库路径 <input type="text" id="set-skills-path"></label>
         <label>活动采集目录（;分隔，留空用默认）<input type="text" id="set-activity-dirs" placeholder="C:\Users\43886\Documents\Default Project;C:\Users\43886\global\skills"></label>
-        <label>敏感词（聊天频道含则整条隐藏，,分隔，默认：小念）<input type="text" id="set-sensitive-names" placeholder="小念"></label>
+        <label>敏感词（聊天频道含则整条隐藏，,分隔，默认：家人）<input type="text" id="set-sensitive-names" placeholder="家人"></label>
         <label>端口 <input type="text" id="set-port"></label>
         <div class="log-actions">
           <button class="btn" onclick="testReminder()">发测试推送</button>
@@ -193,6 +193,6 @@
 
 <div id="toast" class="toast hidden"></div>
 
-<script src="/static/app.js?v=8"></script>
+<script src="/static/app.js?v=9"></script>
 </body>
 </html>

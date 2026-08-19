@@ -203,7 +203,7 @@ def _dedup(events: list[dict]) -> list[dict]:
 
 def _sensitive_names() -> list[str]:
     raw = db.get_settings().get("sensitive_names", "")
-    names = [n.strip() for n in raw.split(",") if n.strip()] if raw else ["小念"]
+    names = [n.strip() for n in raw.split(",") if n.strip()] if raw else ["家人"]
     return names
 
 
