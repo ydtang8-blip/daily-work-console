@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import json
 import os
-import re
-import glob
 import subprocess
 import sys
 from datetime import datetime
@@ -123,144 +121,13 @@ def collect_terminal() -> list[dict]:
         except OSError:
             continue
         lines = [l.strip() for l in lines if l.strip() and not l.strip().startswith("#")]
-        recent = lines[-30:]
-        for cmd in recent:
-            item = _chat_item(cmd)
-            if item:
-                events.append(item)
-            else:
-                events.append({
-                    "time": _fmt(mtime) if today else "",
-                    "title": cmd[:100],
-                    "detail": "今天（PSReadLine 历史无精确时间戳）" if today else "较早",
-                })
-    return _dedup(events)
-
-
-UUID_RE = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", re.I)
-CODEX_SESSIONS = HOME / ".codex/sessions"
-OPENCODE_DB = HOME / ".local/share/opencode/opencode.db"
-GROK_SESSIONS = HOME / ".grok/sessions"
-GROK_ACTIVE = HOME / ".grok/active_sessions.json"
-
-
-def _chat_item(cmd: str) -> dict | None:
-    low = cmd.lower()
-    sid = ""
-    m = UUID_RE.search(cmd)
-    if m:
-        sid = m.group(0)
-    if "codex" in low:
-        summary = codex_summary(sid or None)
-        if sid:
-            detail = f"频道 {sid}"
-        else:
-            detail = "新会话"
-        if summary:
-            detail += f" · 内容：{summary}"
-        return {"time": "", "title": f"codex{(' resume ' + sid[:8] + '…') if sid else ''}", "detail": detail, "_key": ("codex", sid or "latest")}
-    if "opencode" in low:
-        summary = opencode_summary()
-        return {"time": "", "title": "opencode", "detail": ("内容：" + summary) if summary else "（无会话记录）", "_key": ("opencode", "latest")}
-    if "grok" in low:
-        summary = grok_summary()
-        return {"time": "", "title": "grok", "detail": ("内容：" + summary) if summary else "（无会话记录）", "_key": ("grok", "latest")}
-    return None
-
-
-def _dedup(events: list[dict]) -> list[dict]:
-    final = []
-    idx = {}
-    for e in events:
-        k = e.pop("_key", None)
-        if not k:
-            final.append(e)
-            continue
-        if k in idx:
-            final[idx[k]] = e
-        else:
-            idx[k] = len(final)
-            final.append(e)
-    return final
-
-
-def codex_summary(session_id: str | None = None) -> str | None:
-    if session_id:
-        pats = glob.glob(str(CODEX_SESSIONS / "**" / f"*{session_id}*"), recursive=True)
-    else:
-        pats = glob.glob(str(CODEX_SESSIONS / "**" / "rollout-*.jsonl"), recursive=True)
-    if not pats:
-        return None
-    pats.sort(key=os.path.getmtime, reverse=True)
-    fp = pats[0]
-    first_user = None
-    try:
-        with open(fp, encoding="utf-8", errors="replace") as fh:
-            for line in fh:
-                if not line.strip():
-                    continue
-                try:
-                    obj = json.loads(line)
-                except ValueError:
-                    continue
-                pl = obj.get("payload")
-                if not isinstance(pl, dict) or pl.get("role") != "user":
-                    continue
-                content = pl.get("content")
-                if not isinstance(content, list):
-                    continue
-                text = " ".join(
-                    c.get("text", "") for c in content
-                    if isinstance(c, dict) and c.get("type") == "input_text" and c.get("text")
-                ).strip()
-                if text and "<environment_context>" not in text:
-                    first_user = text
-                    break
-    except OSError:
-        return None
-    if not first_user:
-        return None
-    s = " ".join(first_user.split())
-    return s[:80]
-
-
-def opencode_summary() -> str | None:
-    if not OPENCODE_DB.exists():
-        return None
-    try:
-        import sqlite3
-
-        con = sqlite3.connect(str(OPENCODE_DB))
-        con.row_factory = sqlite3.Row
-        row = con.execute(
-            "SELECT title FROM session WHERE title IS NOT NULL AND title<>'' ORDER BY time_updated DESC LIMIT 1"
-        ).fetchone()
-        con.close()
-    except Exception:
-        return None
-    return row["title"] if row else None
-
-
-def grok_summary() -> str | None:
-    try:
-        act = json.loads(GROK_ACTIVE.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return None
-    if not isinstance(act, list):
-        return None
-    for a in act:
-        sid = a.get("session_id")
-        if not sid:
-            continue
-        for sp in glob.glob(str(GROK_SESSIONS / "**" / sid / "summary.json"), recursive=True):
-            try:
-                sm = json.load(open(sp, encoding="utf-8"))
-            except (OSError, ValueError):
-                continue
-            title = sm.get("session_summary") or sm.get("title") or sm.get("summary") or ""
-            if title:
-                return str(title).replace("<|eos|>", "").strip()[:80]
-    return None
+        for cmd in lines[-30:]:
+            events.append({
+                "time": _fmt(mtime) if today else "",
+                "title": cmd[:100],
+                "detail": "今天（PSReadLine 历史无精确时间戳）" if today else "较早",
+            })
+    return events
 
 
 def collect() -> dict:
