@@ -9,6 +9,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 import db
+import deepseek
 import reminder
 import skills_index
 
@@ -70,6 +71,7 @@ class SettingsIn(BaseModel):
     pushplus_title: str | None = None
     pushdeer_key: str | None = None
     bark_key: str | None = None
+    deepseek_key: str | None = None
     skills_path: str | None = None
     port: str | None = None
 
@@ -255,7 +257,7 @@ def api_settings() -> dict:
 @app.post("/api/settings")
 def api_save_settings(body: SettingsIn) -> dict:
     payload = body.model_dump(exclude_none=True)
-    for key in ("pushplus_token", "pushdeer_key", "bark_key"):
+    for key in ("pushplus_token", "pushdeer_key", "bark_key", "deepseek_key"):
         if payload.get(key) == "********":
             payload.pop(key)
     db.save_settings(payload)
@@ -281,6 +283,17 @@ def api_reminder_test() -> dict:
 @app.get("/api/reminders/due")
 def api_reminders_due() -> dict:
     return {"todos": reminder.due_todos()}
+
+
+@app.post("/api/reviews/ai")
+def api_review_ai() -> dict:
+    if not db.get_settings().get("deepseek_key"):
+        raise HTTPException(400, "请先在设置页填写 DeepSeek API Key")
+    try:
+        result = deepseek.auto_draft()
+    except RuntimeError as e:
+        raise HTTPException(502, str(e)) from e
+    return result
 
 
 def main() -> None:

@@ -8,6 +8,11 @@ from datetime import datetime
 
 from db import get_log, get_settings, list_todos, today_iso, update_todo
 
+try:
+    import deepseek
+except ImportError:
+    deepseek = None
+
 PUSHPLUS_URL = "https://www.pushplus.plus/send"
 PUSHDEER_URL = "https://api2.pushdeer.com/message/push"
 BARK_URL = "https://api.day.app/push"
@@ -166,9 +171,19 @@ def evening_nudge() -> dict:
     settings = get_settings()
     today = today_iso()
     log = get_log(today)
-    if log:
+    if log and (log.get("review") or "").strip():
         return {"ok": True, "sent": 0, "detail": "今日复盘已写"}
     content = "今天的复盘还没写，去工作台花 2 分钟记录：\n\n- 今天完成了什么\n- 想到哪些改进点\n- 哪些还没做完，明天继续"
+    if settings.get("deepseek_key"):
+        try:
+            draft = deepseek.auto_draft()
+            content = (
+                f"**DeepSeek 已帮你起草今日复盘，去工作台确认修改：**\n\n"
+                f"{draft['review']}\n\n"
+                f"（工作台 → 复盘 → 打开今日 → 修改后保存）"
+            )
+        except Exception as e:
+            content += f"\n\n（AI 草稿失败：{e}）"
     result, channel = dispatch(settings.get("pushplus_title", "工作台提醒") + " · 该写复盘了", content, settings)
     return {"ok": True, "sent": 1, "channel": channel, "result": result}
 

@@ -103,9 +103,11 @@ def public_settings() -> dict:
     s["has_pushplus_token"] = bool(s.get("pushplus_token"))
     s["has_pushdeer_key"] = bool(s.get("pushdeer_key"))
     s["has_bark_key"] = bool(s.get("bark_key"))
+    s["has_deepseek_key"] = bool(s.get("deepseek_key"))
     s.pop("pushplus_token", None)
     s.pop("pushdeer_key", None)
     s.pop("bark_key", None)
+    s.pop("deepseek_key", None)
     return s
 
 

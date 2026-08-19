@@ -86,9 +86,10 @@
         <label>未完成/遗留（每行一项）<textarea id="log-unfinished" rows="4"></textarea></label>
         <label>备注 <textarea id="log-notes" rows="2"></textarea></label>
         <div class="log-actions">
+          <button class="btn primary" onclick="aiGenerateReview()">AI 生成复盘</button>
           <button class="btn" onclick="copyLogToImprovements()">改进点转存</button>
           <button class="btn" onclick="copyLogToTodos()">遗留转待办</button>
-          <button class="btn primary" onclick="saveLog()">保存</button>
+          <button class="btn" onclick="saveLog()">保存</button>
         </div>
       </div>
     </div>
@@ -149,6 +150,7 @@
         </select></label>
         <label>PushDeer PushKey <input type="password" id="set-pushdeer" placeholder="PDU… 留空保持不变"></label>
         <label>Bark 设备 Key <input type="password" id="set-bark" placeholder="Bark App 里的 key，留空不变"></label>
+        <label>DeepSeek API Key（AI 写复盘）<input type="password" id="set-deepseek" placeholder="sk-… 留空保持不变"></label>
         <label>PushPlus Token（微信，含密不入库）<input type="password" id="set-token" placeholder="留空保持不变"></label>
         <label>推送标题 <input type="text" id="set-title" placeholder="工作台提醒"></label>
         <label>技能库路径 <input type="text" id="set-skills-path"></label>

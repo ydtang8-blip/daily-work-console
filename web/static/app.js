@@ -295,6 +295,25 @@ async function saveLog() {
   }
 }
 
+async function aiGenerateReview() {
+  const btn = event.currentTarget;
+  btn.disabled = true;
+  btn.textContent = 'AI 生成中…';
+  try {
+    const r = await api('/api/reviews/ai', { method: 'POST' });
+    document.getElementById('log-review').value = r.review || '';
+    if (r.done_items && !document.getElementById('log-done').value.trim()) document.getElementById('log-done').value = r.done_items;
+    if (r.improvements && !document.getElementById('log-imp').value.trim()) document.getElementById('log-imp').value = r.improvements;
+    if (r.unfinished && !document.getElementById('log-unfinished').value.trim()) document.getElementById('log-unfinished').value = r.unfinished;
+    toast('AI 复盘草稿已生成，改改再保存');
+  } catch (e) {
+    toast(e.message, 'err');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'AI 生成复盘';
+  }
+}
+
 async function copyLogToImprovements() {
   const lines = document.getElementById('log-imp').value
     .split('\n')
@@ -589,6 +608,7 @@ async function loadSettings() {
   document.getElementById('set-token').placeholder = s.has_pushplus_token ? '已配置（留空不变）' : '未配置';
   document.getElementById('set-pushdeer').placeholder = s.has_pushdeer_key ? '已配置（留空不变）' : '未配置';
   document.getElementById('set-bark').placeholder = s.has_bark_key ? '已配置（留空不变）' : '未配置';
+  document.getElementById('set-deepseek').placeholder = s.has_deepseek_key ? '已配置（留空不变）' : '未配置';
 }
 
 async function saveSettings() {
@@ -599,6 +619,8 @@ async function saveSettings() {
   if (pd) body.pushdeer_key = pd;
   const bk = document.getElementById('set-bark').value;
   if (bk) body.bark_key = bk;
+  const dsk = document.getElementById('set-deepseek').value;
+  if (dsk) body.deepseek_key = dsk;
   body.channel = document.getElementById('set-channel').value;
   body.pushplus_title = document.getElementById('set-title').value.trim() || '工作台提醒';
   body.skills_path = document.getElementById('set-skills-path').value.trim();
@@ -607,6 +629,7 @@ async function saveSettings() {
   document.getElementById('set-token').value = '';
   document.getElementById('set-pushdeer').value = '';
   document.getElementById('set-bark').value = '';
+  document.getElementById('set-deepseek').value = '';
   toast('已保存（改端口需重启）');
   loadSettings();
 }
